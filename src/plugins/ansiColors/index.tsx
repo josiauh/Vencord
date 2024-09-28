@@ -32,6 +32,11 @@ type Format = typeof Formats[number];
 const Colors = [30, 31, 32, 33, 34, 35, 36, 37] as const;
 const ColorLabels = ["Gray", "Red", "Green", "Yellow", "Blue", "Pink", "Cyan", "White"] as const;
 type Color = typeof Colors[number];
+/*
+const BGs = [40, 41, 42, 43, 44, 45, 46, 47] as const;
+const BGLabels = ["Gray", "Red", "Green", "Yellow", "Blue", "Pink", "Cyan", "White"] as const;
+type BG = typeof BGs[number];
+*/
 
 
 const cl = classNameFactory("vc-st-");
@@ -44,14 +49,20 @@ function getColoredText(format: string, text: string, color: Color) {
     return `\`\`\`ansi\n${getFormat(format, color)}${text}\u001b[0m\n\`\`\``;
 }
 
+function formatWithBG() {
+    return "nothing";
+}
+
 function PickerModal({ rootProps, close }: { rootProps: ModalProps, close(): void; }) {
     const [value, setValue] = useState<string>("so cool");
     const [format, setFormat] = useState<Format>("\u001b[1;{}m");
     const [color, setColor] = useState<Color>(31);
+    // const [bg, setBG] = useState<BG>(41);
     const rendered = useMemo(() => {
         const nonnull = value || "so cool";
         const othernon = format || "\u001b[1;{}m";
         const oneil = color || Colors[0] as Color;
+        // const grah = bg || BGs[0] as BG;
         return Parser.parse(getColoredText(getFormat(othernon, oneil), nonnull, color || 31));
     }, [value, format, color]);
     return (
@@ -91,7 +102,7 @@ function PickerModal({ rootProps, close }: { rootProps: ModalProps, close(): voi
                     )}
                     renderOptionValue={() => rendered}
                 />
-                <Forms.FormTitle>ANSI Color</Forms.FormTitle>
+                <Forms.FormTitle>FG Color</Forms.FormTitle>
                 <Select
                     options={
                         Colors.map(m => ({
