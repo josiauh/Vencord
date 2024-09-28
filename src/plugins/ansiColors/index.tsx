@@ -32,12 +32,9 @@ type Format = typeof Formats[number];
 const Colors = [30, 31, 32, 33, 34, 35, 36, 37] as const;
 const ColorLabels = ["Gray", "Red", "Green", "Yellow", "Blue", "Pink", "Cyan", "White"] as const;
 type Color = typeof Colors[number];
-/*
 const BGs = [40, 41, 42, 43, 44, 45, 46, 47] as const;
-const BGLabels = ["Gray", "Red", "Green", "Yellow", "Blue", "Pink", "Cyan", "White"] as const;
+const BGLabels = ["FF Dark Blue", "Orange", "Marble Blue", "Gray", "Indigo", "Light Gray", "White"] as const;
 type BG = typeof BGs[number];
-*/
-
 
 const cl = classNameFactory("vc-st-");
 
@@ -45,8 +42,8 @@ function getFormat(base: string, color: Color) {
     return base.replaceAll("{}", color.toString());
 }
 
-function getColoredText(format: string, text: string, color: Color) {
-    return `\`\`\`ansi\n${getFormat(format, color)}${text}\u001b[0m\n\`\`\``;
+function getColoredText(format: string, text: string, color: Color, bg: BG) {
+    return `\`\`\`ansi\n${getFormat(format, color)}\u001b[${bg}m${text}\u001b[0m\n\`\`\``;
 }
 
 function formatWithBG() {
@@ -57,21 +54,20 @@ function PickerModal({ rootProps, close }: { rootProps: ModalProps, close(): voi
     const [value, setValue] = useState<string>("so cool");
     const [format, setFormat] = useState<Format>("\u001b[1;{}m");
     const [color, setColor] = useState<Color>(31);
-    // const [bg, setBG] = useState<BG>(41);
+    const [bg, setBG] = useState<BG>(41);
+
     const rendered = useMemo(() => {
         const nonnull = value || "so cool";
         const othernon = format || "\u001b[1;{}m";
         const oneil = color || Colors[0] as Color;
-        // const grah = bg || BGs[0] as BG;
-        return Parser.parse(getColoredText(getFormat(othernon, oneil), nonnull, color || 31));
-    }, [value, format, color]);
+        const grah = bg || BGs[0] as BG;
+        return Parser.parse(getColoredText(getFormat(othernon, oneil), nonnull, oneil, grah));
+    }, [value, format, color, bg]);
+
     return (
         <ModalRoot {...rootProps}>
             <ModalHeader className={cl("modal-header")}>
-                <Forms.FormTitle tag="h2">
-                    Ansi Colors
-                </Forms.FormTitle>
-
+                <Forms.FormTitle tag="h2">Ansi Colors</Forms.FormTitle>
                 <ModalCloseButton onClick={close} />
             </ModalHeader>
 
@@ -86,50 +82,54 @@ function PickerModal({ rootProps, close }: { rootProps: ModalProps, close(): voi
                 />
                 <Forms.FormTitle>ANSI Format</Forms.FormTitle>
                 <Select
-                    options={
-                        Formats.map(m => ({
-                            label: FormatLabels[Formats.findIndex(value => value === m)],
-                            value: m
-                        }))
-                    }
+                    options={Formats.map(m => ({
+                        label: FormatLabels[Formats.findIndex(value => value === m)],
+                        value: m
+                    }))}
                     isSelected={v => v === format}
                     select={v => setFormat(v)}
                     serialize={v => v}
                     renderOptionLabel={o => (
-                        <div className={cl("format-label")}>
-                            {o.label}
-                        </div>
+                        <div className={cl("format-label")}>{o.label}</div>
                     )}
                     renderOptionValue={() => rendered}
                 />
                 <Forms.FormTitle>FG Color</Forms.FormTitle>
                 <Select
-                    options={
-                        Colors.map(m => ({
-                            label: ColorLabels[Colors.findIndex(value => value === m)],
-                            value: m
-                        }))
-                    }
+                    options={Colors.map(m => ({
+                        label: ColorLabels[Colors.findIndex(value => value === m)],
+                        value: m
+                    }))}
                     isSelected={v => v === format}
                     select={v => setColor(v)}
                     serialize={v => v}
                     renderOptionLabel={o => (
-                        <div className={cl("format-label")}>
-                            {o.label}
-                        </div>
+                        <div className={cl("format-label")}>{o.label}</div>
+                    )}
+                    renderOptionValue={() => rendered}
+                />
+                <Forms.FormTitle>BG Color</Forms.FormTitle>
+                <Select
+                    options={BGs.map(m => ({
+                        label: BGLabels[BGs.findIndex(value => value === m)],
+                        value: m
+                    }))}
+                    isSelected={v => v === bg}
+                    select={v => setBG(v)}
+                    serialize={v => v}
+                    renderOptionLabel={o => (
+                        <div className={cl("format-label")}>{o.label}</div>
                     )}
                     renderOptionValue={() => rendered}
                 />
                 <Forms.FormTitle className={Margins.bottom8}>Preview</Forms.FormTitle>
-                <Forms.FormText className={cl("preview-text")}>
-                    {rendered}
-                </Forms.FormText>
+                <Forms.FormText className={cl("preview-text")}>{rendered}</Forms.FormText>
             </ModalContent>
 
             <ModalFooter>
                 <Button
                     onClick={() => {
-                        insertTextIntoChatInputBox(getColoredText(format || Formats[0], value || "so cool", color || 31));
+                        insertTextIntoChatInputBox(getColoredText(format || Formats[0], value || "so cool", color || 31, bg || 41));  // Include BG
                         close();
                     }}
                 >Insert</Button>
@@ -137,6 +137,7 @@ function PickerModal({ rootProps, close }: { rootProps: ModalProps, close(): voi
         </ModalRoot>
     );
 }
+
 
 const ChatBarIcon: ChatBarButton = ({ isMainChat }) => {
     if (!isMainChat) return null;
