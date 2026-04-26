@@ -8,16 +8,16 @@ import { Devs } from "@utils/constants";
 import { openModal } from "@utils/modal";
 import definePlugin from "@utils/types";
 
-import ASPanel from "./switcher";
+import ASModal from "./switcher";
 
 function keydownHandler(e: KeyboardEvent) {
     if (e.ctrlKey && e.key === "y") {
-        openModal(props => <ASPanel rootProps={props} />);
+        openModal(props => <ASModal rootProps={props} />);
     }
 }
 
 export default definePlugin({
-    name: "AdvancedPalette",
+    name: "BetterSwitcher",
     description: "When Quick Finder bad and Search bad! (Ctrl+Y)",
     authors: [Devs.oky],
 
