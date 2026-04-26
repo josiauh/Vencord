@@ -9,6 +9,7 @@ import { ModalContent, ModalProps, ModalRoot } from "@utils/modal";
 import { React, TextInput } from "@webpack/common";
 
 import CategorySwitch from "./components/CategorySwitch";
+import { handleSearch } from "./utils/search";
 
 // setting up for making the actual css sheet, but for now we ball inline
 // const cl = classNameFactory("vc-plugin-advPal-");
@@ -31,7 +32,9 @@ export default function ASModal({ rootProps }: { rootProps: ModalProps; }) {
                     />
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <TextInput value={query} onChange={setQuery} placeholder="Look for..." />
-                        <Button>Go</Button>
+                        <Button
+                            onClick={() => handleSearch(query, option)}
+                        >Go</Button>
                     </div>
                     <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
                         PLACEHOLDER

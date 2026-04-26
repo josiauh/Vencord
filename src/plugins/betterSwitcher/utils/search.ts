@@ -8,6 +8,8 @@ import { Message } from "@vencord/discord-types";
 import { findByProps } from "@webpack";
 import { ChannelStore, GuildStore, MessageStore, PermissionsBits, PermissionStore, SelectedChannelStore } from "@webpack/common";
 
+import { Filter, filterHandlerMessage } from "./filter";
+
 const editDistance = (input: string, target: string) => {
     const m = input.length;
     const n = target.length;
@@ -60,8 +62,24 @@ export function messageFZF(messages: Message[], input: string) {
         .map(({ msg }) => msg);
 }
 
-export function handleSearch(input: string, option: string) {
+function recentSearch(input: string, filters?: Filter[]) {
+    const currentID = SelectedChannelStore.getChannelId();
+    const lastMessages: Message[] = currentID ? MessageStore.getMessages(currentID)._array // why's it locked between an array?
+        : [];
 
+    const words = input.toLowerCase().split(/\s+/);
+
+    let filtered = lastMessages
+        .filter(msg => words.some(w => msg.content.toLowerCase().includes(w)));
+    filtered = messageFZF(filtered, input);
+
+    if (filters)
+        filtered = filtered.filter(v => filters.every(f => filterHandlerMessage(f, v)));
+
+    return filtered;
+}
+
+export function handleSearch(input: string, option: number) {
     const MessageActions = findByProps("jumpToMessage");
     // values to search from
     const allGuilds = GuildStore.getGuilds();
@@ -69,16 +87,22 @@ export function handleSearch(input: string, option: string) {
         .map(id => ChannelStore.getChannel(id))
         .filter(v => PermissionStore.can(PermissionsBits.VIEW_CHANNEL, v));
 
-    // dang there are so many stores, might as well call it a marketplace
-    const currentID = SelectedChannelStore.getChannelId();
-    const lastMessages: Message[] = currentID ? MessageStore.getMessages(currentID)._array
-        : [];
-
     const results: any[] = [];
 
-    switch (option) {
-        case "Favorites":
+    const filterRegex = /(\S+):(\S+)/g;
+    const allFilters = [...input.matchAll(filterRegex)];
 
-    }
+    const filters: Filter[] = allFilters.map<Filter>(v => ({
+        name: v[1],
+        value: v[2]
+    }));
+
+    filterRegex.lastIndex = 0;
+
+    const cleanedInput = input.replace(filterRegex, "").replace(/\s+/g, " ").trim();
+
+    console.log("Searching for: ", cleanedInput);
+    console.log("All filters: ", allFilters);
+
+    if (option === 2) console.log(recentSearch(cleanedInput, filters));
 }
-
