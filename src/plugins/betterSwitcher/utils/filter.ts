@@ -5,36 +5,34 @@
  */
 
 import { Message } from "@vencord/discord-types";
-import { MessageFlags } from "@vencord/discord-types/enums";
+import { MessageFlags, MessageType } from "@vencord/discord-types/enums";
 
 export type Filter = {
     name: string,
     value: string;
 };
 
+
+
+// Message functionality (all WIP)
+
 export function filterHandlerMessage(filter: Filter, message: Message): boolean {
-    let invert = false;
+    const invert = filter.name.startsWith("not!");
+    const filterName = invert ? filter.name.slice(4) : filter.name;
 
-    if (filter.name.startsWith("not!")) {
-        console.log("Inverting!");
-        invert = true;
-        filter.name = filter.name.slice(4);
-        console.log(filter.name);
-    }
-
-    switch (filter.name) {
+    switch (filterName) {
         case "is":
             return isFilterHandlerMessage(filter.value, message) === !invert;
         case "reaction":
             return reactionHandler(filter.value, message) === !invert;
     }
 
-    return true; // if a filter doesn't exist, there's not really anything needed
+    return !invert; // if a filter doesn't exist, there's not really anything needed
 }
 
 function reactionHandler(value: string, message: Message) {
     return message.reactions.some(v => {
-        v.emoji.name === value || v.emoji.id === value;
+        return v.emoji.name === value || v.emoji.id === value;
     });
 }
 
@@ -45,7 +43,7 @@ function reactionHandler(value: string, message: Message) {
 function isFilterHandlerMessage(value: string, message: Message) {
     switch (value) {
         case "reply":
-            return message.messageReference !== null;
+            return message.type === MessageType.REPLY;
         case "edited":
             return message.isEdited();
         case "spawnThread":

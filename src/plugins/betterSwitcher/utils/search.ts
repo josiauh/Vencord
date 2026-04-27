@@ -104,5 +104,7 @@ export function handleSearch(input: string, option: number) {
     console.log("Searching for: ", cleanedInput);
     console.log("All filters: ", allFilters);
 
-    if (option === 2) console.log(recentSearch(cleanedInput, filters));
+    if (option === 2) return recentSearch(cleanedInput, filters);
+
+    return [];
 }
