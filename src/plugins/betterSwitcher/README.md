@@ -13,7 +13,7 @@ Search stuff
 To favorite stuff, the Context Menu has a Favorite Message button
 
 ## Filters
-Everything built into the Discord search is supported
+Some of the filters documented [here](https://docs.discord.food/resources/message#query-string-params) are supported
 
 ### Generic
 * `not!<filter>`: Search everything but `filter`
