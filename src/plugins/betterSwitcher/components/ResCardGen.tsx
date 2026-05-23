@@ -51,7 +51,7 @@ function MessageResultCardGenerator({ ...props }: {
             key={v.id}
             mainContent={nameHelper(v.author)} // hell yeah inline code
             dimText={v.content.slice(0, settings.store.messagePreviewLength)}
-            sideText={ChannelStore.getChannel(v.channel_id).name}
+            sideText={ChannelStore.getChannel(v.channel_id).name ?? ""}
             onClick={() => {
                 MessageActions.jumpToMessage({
                     channelId: v.channel_id,
@@ -74,7 +74,7 @@ function UserResultCardGenerator({ ...props }: {
                 key={v.id}
                 mainContent={nameHelper(v, props.guildId)} // hell yeah inline code
                 extraLeftNodes={(
-                    <img src={v.getAvatarURL(props.guildId, 16)} alt={"Avatar"} />
+                    <img src={v.getAvatarURL(props.guildId, 32, true)} alt={"Avatar"} height={32} width={32} style={{ borderRadius: 100 }} />
                 )}
                 onClick={() => {
                     openUserProfileModal({

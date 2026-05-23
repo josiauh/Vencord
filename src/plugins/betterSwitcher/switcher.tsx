@@ -5,12 +5,10 @@
  */
 
 import { Button } from "@components/Button";
-import { Heading } from "@components/Heading";
 import { Span } from "@components/Span";
-import { ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
-import { React, TextInput } from "@webpack/common";
+import { Message, RenderModalProps, User } from "@vencord/discord-types";
+import { Modal, React, TabBar, TextInput } from "@webpack/common";
 
-import CategorySwitch from "./components/CategorySwitch";
 import GenericResultCardGen from "./components/ResCardGen";
 import { handleBaseSearch } from "./utils/search";
 
@@ -22,42 +20,48 @@ type _ModalState = {
     option: number,
     allResults: any[],
     apiResultCount: number,
+    isOpen: boolean,
 };
 
 var modalState: _ModalState = {
     query: "",
     option: 0,
     allResults: [],
-    apiResultCount: -1
+    apiResultCount: -1,
+    isOpen: false
 };
 
-export default function ASModal({ rootProps }: { rootProps: ModalProps; }) {
+
+export default function ASModal({ modalProps }: { modalProps: RenderModalProps; }) {
 
     const [query, setQuery] = React.useState(modalState.query);
     const [option, setOption] = React.useState(modalState.option);
 
-    const [allResults, setResults] = React.useState<any[]>(modalState.allResults);
+    const [allResults, setResults] = React.useState<Array<Message | User>>(modalState.allResults as Array<Message | User>);
     const [apiResultCount, setResCount] = React.useState(modalState.apiResultCount); // -1 means not from API
 
-    const options = ["Favorited", "Friends", "Recent Messsages", "Channels", "Servers", "All Messages"];
+    const options = ["Favorited", "Friends", "Cached Messages", "Channels", "Servers", "All Messages"];
 
     // unconventional save state functionality
     const saveState = () => {
         modalState = {
-            query, option, allResults, apiResultCount
+            query, option, allResults, apiResultCount, isOpen: true,
         };
     };
-
     React.useEffect(() => {
         saveState();
-    }, [allResults, query]);
+    }, [allResults, apiResultCount, option, query]);
 
     // Extra handler, it's for extra stuff tbh
     const handleSearch = async (query: string, option: number) => {
         const res = await handleBaseSearch(query, option);
 
-        // I'm not handling this any other way for now
-        if (res.type === "undefined") throw "Undefined search results";
+        if (res.type === "undefined") {
+            setResults([]);
+            setResCount(-1);
+            saveState();
+            return res;
+        }
 
         setResults(res.data);
         setResCount(res.count);
@@ -66,40 +70,43 @@ export default function ASModal({ rootProps }: { rootProps: ModalProps; }) {
         return res;
     };
 
-    const getType = (selectedOption: number): "messages" | "users" => {
-        switch (selectedOption) {
-            case 1: return "users";
-            case 2:
-            case 5:
-            default:
-                return "messages";
-        }
+    // ah fuck we handle multiple now
+    const handleOptionSelect = (nextOption: number) => {
+        setResults([]);
+        setResCount(-1);
+        setOption(nextOption);
     };
 
+    const resultType: "users" | "messages" | null = option === 1 ? "users" : option === 2 || option === 5 ? "messages" : null;
+
     return (
-        <ModalRoot {...rootProps}>
-            <ModalHeader>
-                <Heading>BetterSwitcher</Heading>
-            </ModalHeader>
-            <ModalContent>
-                <div style={{ padding: "5px 25px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <CategorySwitch
-                        onSelect={setOption}
-                        choices={options}
-                        choice={option}
-                    />
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <TextInput value={query} onChange={setQuery} placeholder="Look for..." />
-                        <Button
-                            onClick={async () => handleSearch(query, option)}
-                        >Go</Button>
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
-                        {apiResultCount === -1 || <Span>{apiResultCount} results</Span>}
-                        <GenericResultCardGen results={allResults} type={getType(option)} />
-                    </div>
+        <Modal {...modalProps} title="BetterSwitcher">
+            <div style={{ padding: "5px 10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <TabBar
+                    selectedItem={option}
+                    onItemSelect={handleOptionSelect}
+                    type="top"
+                    look="grey"
+                    aria-label="Type of Search"
+                >
+                    {options.map((label, id) => (
+                        <TabBar.Item key={id} id={id}>
+                            {label}
+                        </TabBar.Item>
+                    ))}
+                </TabBar>
+                <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px" }}>
+                    <TextInput value={query} onChange={setQuery} placeholder="Look for..." />
+                    <Button
+                        onClick={async () => handleSearch(query, option)}
+                    >Go</Button>
                 </div>
-            </ModalContent>
-        </ModalRoot>
+            </div>
+            <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
+                <Span>{apiResultCount} results</Span>
+                {resultType === "messages" && <GenericResultCardGen results={allResults as Message[]} type="messages" />}
+                {resultType === "users" && <GenericResultCardGen results={allResults as User[]} type="users" />}
+            </div>
+        </Modal>
     );
 }

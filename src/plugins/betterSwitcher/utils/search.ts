@@ -9,7 +9,8 @@ import { Message, User } from "@vencord/discord-types";
 import { ChannelStore, GuildStore, MessageStore, PermissionsBits, PermissionStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
 
 import { searchDiscAPI } from "./apiSearch";
-import { Filter, filterHandlerMessage } from "./filter";
+import { Filter, filterHandlerMessage } from "./messagefilter";
+import { filterHandlerUser } from "./userFilter";
 
 const editDistance = (input: string, target: string) => {
     const m = input.length;
@@ -119,6 +120,9 @@ function userSearch(input: string, users: User[], filters?: Filter[]) {
             || user.globalName?.toLowerCase().includes(word)
         )
     );
+
+    if (filters)
+        filtered = filtered.filter(v => filters.every(f => filterHandlerUser(f, v)));
 
     filtered = userFZF(filtered, input);
 

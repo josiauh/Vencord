@@ -1,6 +1,5 @@
 # BetterSwitcher
-<!-- `is:🤼‍♀️`: THE HIDDEN JAMIE PAIGE FILTER? -->
-When Search and Quick Switcher bad
+An extension of Discord's search bar, and
 
 ## Features
 * You can favorite messages and search through them here!
@@ -13,20 +12,20 @@ Search stuff
 To favorite stuff, the Context Menu has a Favorite Message button
 
 ## Filters
-Some of the filters documented [here](https://docs.discord.food/resources/message#query-string-params) are supported
+Some of the filters documented [here](https://docs.discord.food/resources/message#query-string-params) are implemented.
 
-### Generic
 * `not!<filter>`: Search everything but `filter`
 * `is:<query>`: Extra things to search for, each category will have their own "is" queries
 
 ### Messages
 * `is:reply`: Author is replying to a message (this includes forwarding, at least for now)
-* `reaction:<emojiName>`: Messages with a certain reaction
+* `reaction:<emojiName/emojiId>`: Messages with a certain reaction
 * `is:spawnThread`: Messages that make a thread
 * `is:edited`: Has an edit
 
 ### Users/Friends
 * `is:pending`: You have a friend request to, or they're friend requesting you
+* `is:ghosted`: Haven't talked to this friend for at least 1 week/configured time (servers that you are new in do not count)
 * `has:note`: Noted on
 
 ### Channels
@@ -38,6 +37,8 @@ Some of the filters documented [here](https://docs.discord.food/resources/messag
 ### Servers
 * `folder:<name>`: What folder the server is in
 * `is:readOnly`: No channels are available for you to speak in for that server
-* `is:ghosted`: Haven't talked in the server for at least 2 weeks (servers that you are new in do not count, all will appear ghosted once you've enabled the plugin though)
+* `is:ghosted`: See the Users/Friends
 * `is:boosted`: Have you boosted the server?
-* `is:admin[istrator]`: Do you have administrator permission server-wide?
+* `is:admin`: Do you have administrator permission server-wide?
+
+<!-- is:🤼‍♀️: Jamie Paige -->

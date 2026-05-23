@@ -7,9 +7,10 @@
 import { Channel, Message, ThreadMember } from "@vencord/discord-types";
 import { Constants, RestAPI } from "@webpack/common";
 
-import { Filter } from "./filter";
+import { Filter } from "./messagefilter";
 
 const supported = ["offset", "content", "mentions", "mentions_role_id", "has", "pinned", "author_id", "author_type", "channel_id", "embed_type", "embed_provider"] as const;
+const supportedSet = new Set<string>(supported);
 
 type URLParams = Partial<Record<typeof supported[number], string>>;
 
@@ -18,10 +19,13 @@ function filtersToParams(filters: Filter[]): [params: URLParams, passthroughFilt
     const throwaway: Filter[] = [];
     const params: URLParams = {};
     filters.forEach(v => {
-        if (!(v.name in supported)) {
+        console.log("Checking", v);
+        if (!supportedSet.has(v.name)) {
             throwaway.push(v);
+            console.log("Sending to the plugin handler");
             return;
         }
+        console.log("Sending to API");
         params[v.name] = v.value;
     });
 
@@ -45,7 +49,7 @@ interface ResponseBody {
 export async function searchDiscAPI(input: string, guildId: string, filters: Filter[]): Promise<[messages: Message[], filters: Filter[]]> {
     const [params, newFilters] = filtersToParams(filters);
     params.content = input;
-
+    console.log(params);
     const { body } = await RestAPI.get({
         url: Constants.Endpoints.SEARCH_GUILD(guildId),
         query: params
