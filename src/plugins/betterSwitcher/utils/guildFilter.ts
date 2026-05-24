@@ -4,10 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { DataStore } from "@api/index";
+import { ghostData, settings } from "@plugins/betterSwitcher/index";
 import { Guild } from "@vencord/discord-types";
 import { ChannelStore, GuildMemberStore, GuildRoleStore, PermissionsBits, PermissionStore } from "@webpack/common";
 
 import { Filter, GuildFolder } from "./types";
+
+const DAY_MS = 86_400_000;
 
 export async function filterHandlerGuild(filter: Filter, guild: Guild, folders?: GuildFolder[]): Promise<boolean> {
     const invert = filter.name.startsWith("not!");
@@ -31,7 +35,12 @@ export async function filterHandlerGuild(filter: Filter, guild: Guild, folders?:
 async function isHandlerGuild(value: string, guild: Guild): Promise<boolean> {
     switch (value.toLowerCase()) {
         case "ghosted": {
-            return false; // return to at a later date i cant do this
+            if (!settings.store.trackGhosting) return false;
+
+            const lastActive = await DataStore.get<number>(guild.id, ghostData);
+            if (lastActive == null) return false;
+
+            return Date.now() - lastActive >= settings.store.ghostTime * DAY_MS;
         }
         case "readonly": {
             const channels = ChannelStore.getChannelIds(guild.id);

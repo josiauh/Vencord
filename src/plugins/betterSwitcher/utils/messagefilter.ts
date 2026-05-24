@@ -31,10 +31,6 @@ function reactionHandler(value: string, message: Message) {
     });
 }
 
-//             const privileged = [
-//                 PermissionsBits.MANAGE_MESSAGES, PermissionsBits.VIEW_AUDIT_LOG, PermissionsBits.MANAGE_WEBHOOKS
-//             ];
-
 function isFilterHandlerMessage(value: string, message: Message) {
     switch (value) {
         case "reply":

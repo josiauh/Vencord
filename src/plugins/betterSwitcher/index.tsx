@@ -33,10 +33,10 @@ async function initializeGhosts() {
     const allGuilds = GuildStore.getGuildIds();
     const allChannels = ChannelStore.getSortedPrivateChannels();
     allGuilds.forEach(async v => {
-        await DataStore.set(v, 0, ghostData);
+        await DataStore.set(v, Date.now(), ghostData);
     });
     allChannels.forEach(async v => {
-        await DataStore.set(v.id, 0, ghostData);
+        await DataStore.set(v.id, Date.now(), ghostData);
     });
     showToast("Initialized ghosts!", Toasts.Type.SUCCESS);
 }

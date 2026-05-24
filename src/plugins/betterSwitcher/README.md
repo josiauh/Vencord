@@ -12,7 +12,7 @@ Filter values can use double quotes to include spaces.
 * [x] `is:<query>`: Extra things to search for, each category will have their own "is" queries
 * [ ] `is:favorite`: An object you have favorited. You can favorite something in a context menu.
 
-### Messages
+### Messages (COMPLETED IMPLEMENTATION!)
 
 Note: if you are using All Messages, that hits the Discord API, which is limited to 25 messages per result. Use the `offset` filter (from the docs):
 * `offset:<number>`: Number to offset the returned messages by (max 9975)
@@ -32,11 +32,11 @@ Note: if you are using All Messages, that hits the Discord API, which is limited
 * [ ] `is:hidden`: Show channels you have no access to at all
 * [ ] `is:<type>`: The channel is type, type being forum, voice, text, stage, or thread
 
-### Servers
+### Servers (COMPLETED IMPLEMENTATION!)
 * [x] `folder:<name>`: What folder the server is in
 * [x] `folder:noFolder`: All the unsorted servers
 * [x] `is:readOnly`: No channels are available for you to speak in for that server
-* [ ] `is:ghosted`: See the Users/Friends entry
+* [x] `is:ghosted`: See the Users/Friends entry
 * [x] `is:boosted`: Have you boosted the server?
 * [x] `is:mod`: Are you able to do basic moderation in this server all around? (Delete messages, kick members, pin messages, bypass slowmodes)
 * [x] `is:admin`: Do you have administrator permission server-wide?
