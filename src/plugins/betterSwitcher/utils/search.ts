@@ -5,9 +5,9 @@
  */
 
 import { settings } from "@plugins/betterSwitcher/index";
-import { Guild, Message, User } from "@vencord/discord-types";
+import { Guild, GuildMember, Message, User } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
-import { Constants, GuildStore, MessageStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
+import { Constants, GuildMemberStore, GuildStore, MessageStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
 
 import { searchDiscAPI } from "./apiSearch";
 import { guildFZF, messageFZF, userFZF } from "./fzf";
@@ -70,7 +70,7 @@ function userSearch(input: string, users: User[], filters?: Filter[]): [User[], 
     );
 
     if (filters)
-        filtered = filtered.filter(v => filters.every(f => filterHandlerUser(f, v)));
+        filtered = filtered.filter(v => filters.every(async f => await filterHandlerUser(f, v)));
 
     filtered = userFZF(filtered, input);
 
@@ -88,6 +88,7 @@ async function guildSearch(input: string, filters?: Filter[], folders?: GuildFol
     );
     console.log(filters);
 
+    // for some reason, this works.
     if (filters?.length) {
         const out: Guild[] = [];
         for (const guild of filtered) {
@@ -135,8 +136,24 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
             const relationships = relationshipIDs
                 .map(id => UserStore.getUser(id))
                 .filter((user): user is User => user != null);
-            console.log(relationships);
             const [data, count] = userSearch(cleanedInput, relationships);
+            return {
+                type: "user", data, count
+            };
+        }
+        case 1: {
+            const guildId = SelectedGuildStore.getGuildId();
+            if (!guildId) return {
+                type: "user", data: [], count: -1
+            };
+            const memberIds = GuildMemberStore.getMemberIds(guildId);
+            const members = memberIds.map(v => GuildMemberStore.getMember(guildId, v))
+                .filter((user): user is GuildMember => user != null);
+            const users = members.map(v => UserStore.getUser(v?.userId!));
+            if (!users) return {
+                type: "user", data: [], count: -1
+            };
+            const [data, count] = userSearch(cleanedInput, users);
             return {
                 type: "user", data, count
             };

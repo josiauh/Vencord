@@ -22,10 +22,10 @@ Note: if you are using All Messages, that hits the Discord API, which is limited
 * [x] `is:spawnThread`: Messages that make a thread
 * [x] `is:edited`: Has an edit
 
-### Users/Friends
+### Users/Friends (COMPLETED IMPLEMENTATION!)
 * [x] `is:pending`: You have a friend request to, or they're friend requesting you
-* [ ] `is:ghosted`: Haven't talked to this friend for at least 1 week/configured time. You must configure the ghosting option first.
-* [ ] `has:note`: Noted on
+* [x] `is:ghosted`: Haven't talked to this friend for at least 1 week/configured time. You must configure the ghosting option first.
+* [X] `has:note`: Noted on
 
 ### Channels
 * [ ] `is:readOnly`: Can't talk in these channels
@@ -43,5 +43,6 @@ Note: if you are using All Messages, that hits the Discord API, which is limited
 
 <!-- is:🤼‍♀️: Jamie Paige -->
 
-## Cached Messages vs. All Messages
-Cached Messages for more speed and results, All Messages for older messages and accurate filters
+## Limitations
+* Cached Messages, obviously, is cached and cannot go older. However, this comes with faster speed and more results.
+* Guild Members have the same limitation of being cached, meaning not every member can be searched for.
