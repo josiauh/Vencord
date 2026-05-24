@@ -5,9 +5,9 @@
  */
 
 import { Channel, Message, ThreadMember } from "@vencord/discord-types";
-import { Constants, RestAPI } from "@webpack/common";
+import { RestAPI } from "@webpack/common";
 
-import { Filter } from "./messagefilter";
+import { Filter } from "./types";
 
 const supported = ["offset", "content", "mentions", "mentions_role_id", "has", "pinned", "author_id", "author_type", "channel_id", "embed_type", "embed_provider"] as const;
 const supportedSet = new Set<string>(supported);
@@ -46,16 +46,17 @@ interface ResponseBody {
 
 
 // Separate thing for handling API search because its yea
-export async function searchDiscAPI(input: string, guildId: string, filters: Filter[]): Promise<[messages: Message[], filters: Filter[]]> {
+export async function searchDiscAPI(input: string, endpoint: string, filters: Filter[]): Promise<[messages: Message[], filters: Filter[], length: number]> {
     const [params, newFilters] = filtersToParams(filters);
     params.content = input;
     console.log(params);
     const { body } = await RestAPI.get({
-        url: Constants.Endpoints.SEARCH_GUILD(guildId),
+        url: endpoint,
         query: params
     });
 
     const messages = (body as ResponseBody).messages.flat();
+    const length = (body as ResponseBody).total_results;
 
-    return [messages, newFilters];
+    return [messages, newFilters, length];
 }

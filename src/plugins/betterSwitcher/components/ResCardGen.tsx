@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Message, User } from "@vencord/discord-types";
+import { Guild, Message, User } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
-import { ChannelStore, GuildMemberStore, MessageActions, StreamerModeStore } from "@webpack/common";
+import { ChannelStore, GuildMemberStore, IconUtils, MessageActions, NavigationRouter, StreamerModeStore } from "@webpack/common";
 
 import { settings } from "..";
 import ResultCard from "./ResultCard";
@@ -31,13 +31,15 @@ const nameHelper = (user: User, guildId?: string): string => {
 
 type Props =
     | { type: "messages"; results: Message[]; }
-    | { type: "users"; results: User[]; guildId?: string; };
+    | { type: "users"; results: User[]; guildId?: string; }
+    | { type: "guilds"; results: Guild[]; };
 
 
 export default function GenericResultCardGen({ ...props }: Props) {
     switch (props.type) {
         case "messages": return <MessageResultCardGenerator messages={props.results}></MessageResultCardGenerator>;
         case "users": return <UserResultCardGenerator users={props.results} guildId={props.guildId}></UserResultCardGenerator>;
+        case "guilds": return <GuildResultCardGenerator guilds={props.results}></GuildResultCardGenerator>;
     }
 
     return null;
@@ -83,4 +85,31 @@ function UserResultCardGenerator({ ...props }: {
                 }}
             />
         ));
+}
+
+function GuildResultCardGenerator({ ...props }: {
+    guilds: Guild[];
+}) {
+    return props.guilds
+        .filter((guild): guild is Guild => guild != null)
+        .map(v => {
+            const iconUrl = v.icon && IconUtils.getGuildIconURL({
+                id: v.id,
+                icon: v.icon,
+                canAnimate: true,
+                size: 32
+            });
+            return (
+                <ResultCard
+                    key={v.id}
+                    mainContent={v.name}
+                    extraLeftNodes={iconUrl && (
+                        <img src={iconUrl} alt={"Avatar"} height={32} width={32} style={{ borderRadius: 100 }} />
+                    )}
+                    onClick={() => {
+                        NavigationRouter.transitionToGuild(v.id);
+                    }}
+                />
+            );
+        });
 }

@@ -5,77 +5,18 @@
  */
 
 import { settings } from "@plugins/betterSwitcher/index";
-import { Message, User } from "@vencord/discord-types";
-import { ChannelStore, GuildStore, MessageStore, PermissionsBits, PermissionStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
+import { Guild, Message, User } from "@vencord/discord-types";
+import { findByPropsLazy } from "@webpack";
+import { Constants, GuildStore, MessageStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
 
 import { searchDiscAPI } from "./apiSearch";
-import { Filter, filterHandlerMessage } from "./messagefilter";
+import { guildFZF, messageFZF, userFZF } from "./fzf";
+import { filterHandlerGuild } from "./guildFilter";
+import { filterHandlerMessage } from "./messagefilter";
+import { Filter, GuildFolder } from "./types";
 import { filterHandlerUser } from "./userFilter";
 
-const editDistance = (input: string, target: string) => {
-    const m = input.length;
-    const n = target.length;
-
-    const prev = new Array<number>(n + 1);
-    const curr = new Array<number>(n + 1);
-
-    for (let j = 0; j <= n; j++) {
-        prev[j] = j;
-    }
-
-    for (let i = 1; i <= m; i++) {
-        curr[0] = i;
-        const inputChar = input[i - 1];
-
-        for (let j = 1; j <= n; j++) {
-            if (inputChar === target[j - 1]) {
-                curr[j] = prev[j - 1];
-            } else {
-                curr[j] = 1 + Math.min(prev[j], curr[j - 1], prev[j - 1]);
-            }
-        }
-
-        for (let j = 0; j <= n; j++) {
-            prev[j] = curr[j];
-        }
-    }
-
-    return prev[n];
-};
-
-// For use with Guild and Message
-export function nameFZF(arr: { name: string; }[], input: string) {
-    return arr
-        .map(channel => ({
-            channel,
-            distance: editDistance(input, channel.name)
-        }))
-        .sort((a, b) => a.distance - b.distance)
-        .map(({ channel }) => channel);
-}
-
-export function userFZF(arr: User[], input: string) {
-    return arr
-        .map(user => ({
-            user,
-            distance: Math.min(
-                editDistance(input, user.username),
-                editDistance(input, user.globalName ?? user.username)
-            )
-        }))
-        .sort((a, b) => a.distance - b.distance)
-        .map(({ user }) => user);
-}
-
-export function messageFZF(messages: Message[], input: string) {
-    return messages
-        .map(msg => ({
-            msg,
-            distance: editDistance(input, msg.content)
-        }))
-        .sort((a, b) => a.distance - b.distance)
-        .map(({ msg }) => msg);
-}
+const { getGuildFolders } = findByPropsLazy("getGuildFolders");
 
 function recentSearch(input: string, filters?: Filter[]) {
     const currentID = SelectedChannelStore.getChannelId();
@@ -94,8 +35,15 @@ function recentSearch(input: string, filters?: Filter[]) {
     return filtered;
 }
 
-async function allSearch(input: string, filters?: Filter[]) {
-    const [lastMessages, newFilters] = await searchDiscAPI(input, SelectedGuildStore.getGuildId()!, filters ?? []);
+async function allSearch(input: string, filters?: Filter[]): Promise<[Message[], number]> {
+    let [lastMessages, newFilters]: [Message[], Filter[]] = [[], []];
+    if (SelectedGuildStore.getGuildId() === null && SelectedChannelStore.getChannelId()) {
+        [lastMessages, newFilters, length] = await searchDiscAPI(input, Constants.Endpoints.SEARCH_CHANNEL(SelectedChannelStore.getChannelId()), filters ?? []);
+    } else if (SelectedGuildStore.getGuildId()) {
+        [lastMessages, newFilters, length] = await searchDiscAPI(input, Constants.Endpoints.SEARCH_GUILD(SelectedGuildStore.getGuildId()!), filters ?? []);
+    } else {
+        return [[], 0];
+    }
 
     const words = input.toLowerCase().split(/\s+/);
 
@@ -107,11 +55,11 @@ async function allSearch(input: string, filters?: Filter[]) {
     if (newFilters)
         filtered = filtered.filter(v => newFilters.every(f => filterHandlerMessage(f, v)));
 
-    return filtered;
+    return [filtered, length];
 }
 
 // Base searching
-function userSearch(input: string, users: User[], filters?: Filter[]) {
+function userSearch(input: string, users: User[], filters?: Filter[]): [User[], number] {
     const words = input.toLowerCase().split(/\s+/);
 
     let filtered = users.filter(user =>
@@ -126,29 +74,52 @@ function userSearch(input: string, users: User[], filters?: Filter[]) {
 
     filtered = userFZF(filtered, input);
 
-    return filtered;
+    return [filtered, filtered.length];
+}
+
+async function guildSearch(input: string, filters?: Filter[], folders?: GuildFolder[]): Promise<[Guild[], number]> {
+    const guilds = GuildStore.getGuildsArray();
+    const words = input.toLowerCase().split(/\s+/);
+
+    let filtered = guilds.filter(g =>
+        words.some(word =>
+            g.name.toLowerCase().includes(word)
+        )
+    );
+    console.log(filters);
+
+    if (filters?.length) {
+        const out: Guild[] = [];
+        for (const guild of filtered) {
+            let ok = true;
+            for (const f of filters) {
+                if (!await filterHandlerGuild(f, guild, folders)) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) out.push(guild);
+        }
+        filtered = out;
+    }
+    filtered = guildFZF(filtered, input);
+
+    return [filtered, filtered.length];
 }
 
 export type SearchResult =
     { type: "message", data: Message[], count: number; } |
     { type: "user", data: User[], count: number; } |
+    { type: "guild", data: Guild[], count: number; } |
     { type: "undefined"; };
 
 export async function handleBaseSearch(input: string, option: number): Promise<SearchResult> {
-    // values to search from
-    const allGuilds = GuildStore.getGuilds();
-    const allChannels = ChannelStore.getChannelIds()
-        .map(id => ChannelStore.getChannel(id))
-        .filter(v => PermissionStore.can(PermissionsBits.VIEW_CHANNEL, v));
-
-    const results: any[] = [];
-
-    const filterRegex = /(\S+):(\S+)/g;
+    const filterRegex = /(\S+):(?:"([^"]+)"|(\S+))/g;
     const allFilters = [...input.matchAll(filterRegex)];
 
     const filters: Filter[] = allFilters.map<Filter>(v => ({
         name: v[1],
-        value: v[2]
+        value: v[2] ?? v[3]
     }));
 
     filterRegex.lastIndex = 0;
@@ -159,23 +130,38 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
     console.log("All filters: ", allFilters);
 
     switch (option) {
-        case 1: {
+        case 0: {
             const relationshipIDs = RelationshipStore.getFriendIDs();
             const relationships = relationshipIDs
                 .map(id => UserStore.getUser(id))
                 .filter((user): user is User => user != null);
             console.log(relationships);
+            const [data, count] = userSearch(cleanedInput, relationships);
             return {
-                type: "user", data: userSearch(cleanedInput, relationships), count: -1
+                type: "user", data, count
             };
         }
-        case 2: return {
-            type: "message", data: recentSearch(cleanedInput, filters), count: -1
-        };
-        case 5: return {
-            type: "message", data: await allSearch(cleanedInput, filters), count: -1
-        };
+        case 2: {
+            const data = recentSearch(cleanedInput, filters);
+            return {
+                type: "message", data, count: data.length
+            };
+        }
+        case 3: {
+            const [data, count] = await allSearch(cleanedInput, filters);
+            return {
+                type: "message", data, count
+            };
+        }
+        case 5: {
+            const folders: GuildFolder[] = getGuildFolders();
+            const [data, count] = await guildSearch(cleanedInput, filters, folders);
+            return {
+                type: "guild", data, count
+            };
+        }
     }
 
     return { type: "undefined" };
 }
+

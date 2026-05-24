@@ -11,11 +11,12 @@ import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { GuildStore, openModal, showToast, Toasts } from "@webpack/common";
+import { ChannelStore, GuildStore, openModal, showToast, Toasts, UserStore } from "@webpack/common";
 
 import ASModal from "./switcher";
 
-const ghostData = DataStore.createStore("BetterSwitcher", "GhostServers");
+export const ghostData = DataStore.createStore("BetterSwitcher", "GhostServers");
+const seen = new Set();
 
 function keydownHandler(e: KeyboardEvent) {
     if (e.ctrlKey && e.key === "y") {
@@ -24,10 +25,18 @@ function keydownHandler(e: KeyboardEvent) {
 }
 
 // spooky dont let the ghosts get to you
-function initializeGhosts() {
+async function initializeGhosts() {
+    // remove all keys
+    const allEntries = await DataStore.entries(ghostData);
+    await DataStore.delMany(allEntries[0], ghostData);
+
     const allGuilds = GuildStore.getGuildIds();
+    const allChannels = ChannelStore.getSortedPrivateChannels();
     allGuilds.forEach(async v => {
-        await DataStore.set(v, Date.now(), ghostData);
+        await DataStore.set(v, 0, ghostData);
+    });
+    allChannels.forEach(async v => {
+        await DataStore.set(v.id, 0, ghostData);
     });
     showToast("Initialized ghosts!", Toasts.Type.SUCCESS);
 }
@@ -35,7 +44,7 @@ function initializeGhosts() {
 export const settings = definePluginSettings({
     sortByFzf: {
         type: OptionType.BOOLEAN,
-        description: "Sort message finds by fuzzy finding when on, sort by date when off (ONLY applies to messages, everything else is fzf by default)",
+        description: "Sort messages by fuzzy find instead of date",
         default: false
     },
     messagePreviewLength: {
@@ -54,7 +63,7 @@ export const settings = definePluginSettings({
     },
     preferUsernameOverDisplay: {
         type: OptionType.BOOLEAN,
-        description: "Prefer the username of a user instead of displaying their global name or nickname"
+        description: "Usernames will display instead of display names"
     },
     trackGhosting: {
         type: OptionType.BOOLEAN,
@@ -97,6 +106,21 @@ export default definePlugin({
     tags: [
         "Shortcuts", "Utility"
     ],
+
+    flux: {
+        MESSAGE_CREATE: async e => {
+            if (e.message.author.id !== UserStore.getCurrentUser().id) return; // MessageCreate fires every message recieved and sent
+            if (seen.has(e.message.id)) return; // Fires twice, once for guild, once for channel
+            seen.add(e.message.id);
+            setTimeout(() => seen.delete(e.message.id), 5000); // cleanup
+
+            const key = e.guildId ?? e.channelId;
+            await DataStore.set(key, Date.now(), ghostData);
+            console.log(`unghosted ${e.guildId ? "DM/channel" : "guild"} ${key}`);
+            console.log(typeof key, key);
+
+        }
+    },
 
     async start() {
         // Initialize ghosting data

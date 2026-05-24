@@ -7,12 +7,7 @@
 import { Message } from "@vencord/discord-types";
 import { MessageFlags, MessageType } from "@vencord/discord-types/enums";
 
-export type Filter = {
-    name: string,
-    value: string;
-};
-
-
+import { Filter } from "./types";
 
 // Message functionality (all WIP)
 

@@ -8,7 +8,7 @@ import { User } from "@vencord/discord-types";
 import { RelationshipType } from "@vencord/discord-types/enums";
 import { RelationshipStore } from "@webpack/common";
 
-import { Filter } from "./messagefilter";
+import { Filter } from "./types";
 
 // User functional
 

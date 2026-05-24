@@ -6,7 +6,7 @@
 
 import { Button } from "@components/Button";
 import { Span } from "@components/Span";
-import { Message, RenderModalProps, User } from "@vencord/discord-types";
+import { Guild, Message, RenderModalProps, User } from "@vencord/discord-types";
 import { Modal, React, TabBar, TextInput } from "@webpack/common";
 
 import GenericResultCardGen from "./components/ResCardGen";
@@ -14,6 +14,8 @@ import { handleBaseSearch } from "./utils/search";
 
 // setting up for making the actual css sheet, but for now we ball inline
 // const cl = classNameFactory("vc-plugin-advPal-");
+
+type _ResType = "users" | "messages" | "guilds" | "channels" | null;
 
 type _ModalState = {
     query: string,
@@ -31,16 +33,31 @@ var modalState: _ModalState = {
     isOpen: false
 };
 
+function optToResType(option: number): _ResType {
+    switch (option) {
+        case 0:
+        case 1:
+            return "users";
+        case 2:
+        case 3:
+            return "messages";
+        case 4:
+            return "channels";
+        case 5:
+            return "guilds";
+    }
+    return null;
+}
 
 export default function ASModal({ modalProps }: { modalProps: RenderModalProps; }) {
 
     const [query, setQuery] = React.useState(modalState.query);
     const [option, setOption] = React.useState(modalState.option);
 
-    const [allResults, setResults] = React.useState<Array<Message | User>>(modalState.allResults as Array<Message | User>);
+    const [allResults, setResults] = React.useState<Array<Message | User | Guild>>(modalState.allResults as Array<Message | User | Guild>);
     const [apiResultCount, setResCount] = React.useState(modalState.apiResultCount); // -1 means not from API
 
-    const options = ["Favorited", "Friends", "Cached Messages", "Channels", "Servers", "All Messages"];
+    const options = ["Friends", "Server Members", "Cached Messages", "All Messages", "Channels", "Servers"];
 
     // unconventional save state functionality
     const saveState = () => {
@@ -77,10 +94,10 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
         setOption(nextOption);
     };
 
-    const resultType: "users" | "messages" | null = option === 1 ? "users" : option === 2 || option === 5 ? "messages" : null;
+    const resultType: _ResType = optToResType(option);
 
     return (
-        <Modal {...modalProps} title="BetterSwitcher">
+        <Modal {...modalProps} title="BetterSwitcher" size="xl">
             <div style={{ padding: "5px 10px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 <TabBar
                     selectedItem={option}
@@ -103,9 +120,10 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
                 </div>
             </div>
             <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
-                <Span>{apiResultCount} results</Span>
+                {apiResultCount === -1 || (<Span>{apiResultCount} results</Span>)}
                 {resultType === "messages" && <GenericResultCardGen results={allResults as Message[]} type="messages" />}
                 {resultType === "users" && <GenericResultCardGen results={allResults as User[]} type="users" />}
+                {resultType === "guilds" && <GenericResultCardGen results={allResults as Guild[]} type="guilds" />}
             </div>
         </Modal>
     );
