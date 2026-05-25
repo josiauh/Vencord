@@ -6,6 +6,7 @@
 
 import { Message } from "@vencord/discord-types";
 import { MessageFlags, MessageType } from "@vencord/discord-types/enums";
+import { GuildMemberStore, SelectedGuildStore, SnowflakeUtils, UserStore } from "@webpack/common";
 
 import { Filter } from "./types";
 
@@ -20,10 +21,14 @@ export function filterHandlerMessage(filter: Filter, message: Message): boolean 
             return isFilterHandlerMessage(filter.value, message) === !invert;
         case "reaction":
             return reactionHandler(filter.value, message) === !invert;
+        case "mentions":
+            return mentionsFilterHandler(filter.value, message) === !invert;
     }
 
     return !invert; // if a filter doesn't exist, there's not really anything needed
 }
+
+// Custom filters
 
 function reactionHandler(value: string, message: Message) {
     return message.reactions.some(v => {
@@ -44,3 +49,22 @@ function isFilterHandlerMessage(value: string, message: Message) {
     return true;
 }
 
+// Reimplement the discord filters
+
+function mentionsFilterHandler(value: string, message: Message) {
+    // what a great function name!
+    if (SnowflakeUtils.isProbablyAValidSnowflake(value)) return message.mentions.includes(value);
+
+    // dont bother doing DMs and non-servers... for now.
+    const guildId = SelectedGuildStore.getGuildId();
+    if (!guildId) return true;
+
+    const members = GuildMemberStore.getMembers(guildId);
+    const memb = members.find(v => {
+        if (v.nick === value) return true;
+        return UserStore.getUser(v.userId).username === value;
+    });
+
+    if (!memb) return true; // uncached, so dont orry
+    return message.mentions.includes(memb.userId);
+}

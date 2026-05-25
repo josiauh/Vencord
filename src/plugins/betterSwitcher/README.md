@@ -44,5 +44,6 @@ Note: if you are using All Messages, that hits the Discord API, which is limited
 <!-- is:🤼‍♀️: Jamie Paige -->
 
 ## Limitations
-* Cached Messages, obviously, is cached and cannot go older. However, this comes with faster speed and more results.
+* Cached Messages, obviously, is cached and cannot go older. However, this comes with faster speed and more results. Choose wisely
 * Guild Members have the same limitation of being cached, meaning not every member can be searched for.
+* The reimplementation of `mentions` ONLY supports snowflakes or cached guild members. No I will not bother implementing this until finalization
