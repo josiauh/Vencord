@@ -36,7 +36,7 @@ function recentSearch(input: string, filters?: Filter[]) {
 }
 
 async function allSearch(input: string, filters?: Filter[]): Promise<[Message[], number]> {
-    let [lastMessages, newFilters]: [Message[], Filter[]] = [[], []];
+    let [lastMessages, newFilters, length]: [Message[], Filter[], number] = [[], [], 0];
     if (SelectedGuildStore.getGuildId() === null && SelectedChannelStore.getChannelId()) {
         [lastMessages, newFilters, length] = await searchDiscAPI(input, Constants.Endpoints.SEARCH_CHANNEL(SelectedChannelStore.getChannelId()), filters ?? []);
     } else if (SelectedGuildStore.getGuildId()) {
@@ -59,9 +59,8 @@ async function allSearch(input: string, filters?: Filter[]): Promise<[Message[],
 }
 
 // Base searching
-function userSearch(input: string, users: User[], filters?: Filter[]): [User[], number] {
+async function userSearch(input: string, users: User[], filters?: Filter[]): Promise<[User[], number]> {
     const words = input.toLowerCase().split(/\s+/);
-
     let filtered = users.filter(user =>
         words.some(word =>
             user.username.toLowerCase().includes(word)
@@ -69,11 +68,17 @@ function userSearch(input: string, users: User[], filters?: Filter[]): [User[], 
         )
     );
 
-    if (filters)
-        filtered = filtered.filter(v => filters.every(async f => await filterHandlerUser(f, v)));
+    if (filters) {
+        const results = await Promise.all(
+            filtered.map(async v => {
+                const checks = await Promise.all(filters.map(f => filterHandlerUser(f, v)));
+                return checks.every(Boolean);
+            })
+        );
+        filtered = filtered.filter((_, i) => results[i]);
+    }
 
     filtered = userFZF(filtered, input);
-
     return [filtered, filtered.length];
 }
 
@@ -136,12 +141,23 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
             const relationships = relationshipIDs
                 .map(id => UserStore.getUser(id))
                 .filter((user): user is User => user != null);
-            const [data, count] = userSearch(cleanedInput, relationships);
+            const [data, count] = await userSearch(cleanedInput, relationships, filters);
             return {
                 type: "user", data, count
             };
         }
         case 1: {
+            const relationshipIDs = RelationshipStore.getMutableRelationships();
+            const relationships = relationshipIDs
+                .keys().toArray() // each key is the user id of every relationship. yes we need to convert to array
+                .map(id => UserStore.getUser(id))
+                .filter((user): user is User => user != null);
+            const [data, count] = await userSearch(cleanedInput, relationships, filters);
+            return {
+                type: "user", data, count
+            };
+        }
+        case 2: {
             const guildId = SelectedGuildStore.getGuildId();
             if (!guildId) return {
                 type: "user", data: [], count: -1
@@ -153,24 +169,24 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
             if (!users) return {
                 type: "user", data: [], count: -1
             };
-            const [data, count] = userSearch(cleanedInput, users);
+            const [data, count] = await userSearch(cleanedInput, users, filters);
             return {
                 type: "user", data, count
             };
         }
-        case 2: {
+        case 3: {
             const data = recentSearch(cleanedInput, filters);
             return {
                 type: "message", data, count: data.length
             };
         }
-        case 3: {
+        case 4: {
             const [data, count] = await allSearch(cleanedInput, filters);
             return {
                 type: "message", data, count
             };
         }
-        case 5: {
+        case 6: {
             const folders: GuildFolder[] = getGuildFolders();
             const [data, count] = await guildSearch(cleanedInput, filters, folders);
             return {

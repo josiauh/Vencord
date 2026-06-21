@@ -27,8 +27,7 @@ function keydownHandler(e: KeyboardEvent) {
 // spooky dont let the ghosts get to you
 async function initializeGhosts() {
     // remove all keys
-    const allEntries = await DataStore.entries(ghostData);
-    await DataStore.delMany(allEntries[0], ghostData);
+    await DataStore.clear(ghostData);
 
     const allGuilds = GuildStore.getGuildIds();
     const allChannels = ChannelStore.getSortedPrivateChannels();
@@ -112,18 +111,16 @@ export default definePlugin({
             if (e.message.author.id !== UserStore.getCurrentUser().id) return; // MessageCreate fires every message recieved and sent
             if (seen.has(e.message.id)) return; // Fires twice, once for guild, once for channel
             seen.add(e.message.id);
-            setTimeout(() => seen.delete(e.message.id), 5000); // cleanup
+            setTimeout(() => seen.delete(e.message.id), 500); // cleanup
 
             const key = e.guildId ?? e.channelId;
             await DataStore.set(key, Date.now(), ghostData);
-            console.log(`unghosted ${e.guildId ? "DM/channel" : "guild"} ${key}`);
-            console.log(typeof key, key);
-
         }
     },
 
     async start() {
         // Initialize ghosting data
+        // is there a better way to just check for nothingness?
         const ghostEntries = await DataStore.entries(ghostData);
         if (ghostEntries.length === 0 && settings.store.trackGhosting) {
             initializeGhosts();

@@ -1,11 +1,14 @@
 # BetterSwitcher
+
 An extension of Discord's search bar and quick finder!
 
 ## How do I use it?
+
 It's a search modal, to activate it use `Ctrl+Y`.
 
 ## Filters
-Some of the filters documented [here](https://docs.discord.food/resources/message#query-string-params) are implemented.
+
+Some of the filters documented [in the discord userdocs](https://docs.discord.food/resources/message#query-string-params) are implemented.
 Filter values can use double quotes to include spaces.
 
 * [x] `not!<filter>`: Search everything but `filter`
@@ -15,6 +18,7 @@ Filter values can use double quotes to include spaces.
 ### Messages (COMPLETED IMPLEMENTATION!)
 
 Note: if you are using All Messages, that hits the Discord API, which is limited to 25 messages per result. Use the `offset` filter (from the docs):
+
 * `offset:<number>`: Number to offset the returned messages by (max 9975)
 
 * [x] `is:reply`: Author is replying to a message (this includes forwarding, at least for now)
@@ -22,17 +26,23 @@ Note: if you are using All Messages, that hits the Discord API, which is limited
 * [x] `is:spawnThread`: Messages that make a thread
 * [x] `is:edited`: Has an edit
 
-### Users/Friends (COMPLETED IMPLEMENTATION!)
+### Users (COMPLETED IMPLEMENTATION!)
+
 * [x] `is:pending`: You have a friend request to, or they're friend requesting you
+* [x] `is:friend`: This is your friend!
+* [x] `is:suggested`: Suggested friends (see the [article on suggested friends](https://support.discord.com/hc/en-us/articles/360061878534-Find-Your-Friends-FAQ))
+* [x] `is:implicit`: You interact with them a lot, like they are your friend (see the ImplicitRelationships plugin)
 * [x] `is:ghosted`: Haven't talked to this friend for at least 1 week/configured time. You must configure the ghosting option first.
-* [X] `has:note`: Noted on
+<!-- has:note has been removed for needing to hit the API for every friend. bad -->
 
 ### Channels
+
 * [ ] `is:readOnly`: Can't talk in these channels
 * [ ] `is:hidden`: Show channels you have no access to at all
 * [ ] `is:<type>`: The channel is type, type being forum, voice, text, stage, or thread
 
 ### Servers (COMPLETED IMPLEMENTATION!)
+
 * [x] `folder:<name>`: What folder the server is in
 * [x] `folder:noFolder`: All the unsorted servers
 * [x] `is:readOnly`: No channels are available for you to speak in for that server
@@ -44,6 +54,7 @@ Note: if you are using All Messages, that hits the Discord API, which is limited
 <!-- is:🤼‍♀️: Jamie Paige -->
 
 ## Limitations
+
 * Cached Messages, obviously, is cached and cannot go older. However, this comes with faster speed and more results. Choose wisely
 * Guild Members have the same limitation of being cached, meaning not every member can be searched for.
 * The reimplementation of `mentions` ONLY supports snowflakes or cached guild members. No I will not bother implementing this until finalization

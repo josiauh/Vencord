@@ -6,7 +6,7 @@
 
 import { Button } from "@components/Button";
 import { Span } from "@components/Span";
-import { Guild, Message, RenderModalProps, User } from "@vencord/discord-types";
+import { Channel, Guild, Message, RenderModalProps, User } from "@vencord/discord-types";
 import { Modal, React, TabBar, TextInput } from "@webpack/common";
 
 import GenericResultCardGen from "./components/ResCardGen";
@@ -16,11 +16,12 @@ import { handleBaseSearch } from "./utils/search";
 // const cl = classNameFactory("vc-plugin-advPal-");
 
 type _ResType = "users" | "messages" | "guilds" | "channels" | null;
+type _ResArrayType = User[] | Message[] | Guild[] | Channel[] | null;
 
 type _ModalState = {
     query: string,
     option: number,
-    allResults: any[],
+    allResults: _ResArrayType,
     apiResultCount: number,
     isOpen: boolean,
 };
@@ -37,13 +38,14 @@ function optToResType(option: number): _ResType {
     switch (option) {
         case 0:
         case 1:
-            return "users";
         case 2:
+            return "users";
         case 3:
-            return "messages";
         case 4:
-            return "channels";
+            return "messages";
         case 5:
+            return "channels";
+        case 6:
             return "guilds";
     }
     return null;
@@ -54,10 +56,10 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
     const [query, setQuery] = React.useState(modalState.query);
     const [option, setOption] = React.useState(modalState.option);
 
-    const [allResults, setResults] = React.useState<Array<Message | User | Guild>>(modalState.allResults as Array<Message | User | Guild>);
+    const [allResults, setResults] = React.useState<_ResArrayType>(modalState.allResults);
     const [apiResultCount, setResCount] = React.useState(modalState.apiResultCount); // -1 means not from API
 
-    const options = ["Friends", "Server Members", "Cached Messages", "All Messages", "Channels", "Servers"];
+    const options = ["Friends", "Server Members", "All Relationships", "Cached Messages", "All Messages", "Channels", "Servers"];
 
     // unconventional save state functionality
     const saveState = () => {
