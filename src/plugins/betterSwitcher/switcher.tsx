@@ -12,8 +12,7 @@ import { Modal, React, TabBar, TextInput } from "@webpack/common";
 import GenericResultCardGen from "./components/ResCardGen";
 import { handleBaseSearch } from "./utils/search";
 
-// setting up for making the actual css sheet, but for now we ball inline
-// const cl = classNameFactory("vc-plugin-advPal-");
+// const cl = classNameFactory("vc-plugin-betterSwitcher-");
 
 type _ResType = "users" | "messages" | "guilds" | "channels" | null;
 type _ResArrayType = User[] | Message[] | Guild[] | Channel[] | null;
@@ -57,11 +56,10 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
     const [option, setOption] = React.useState(modalState.option);
 
     const [allResults, setResults] = React.useState<_ResArrayType>(modalState.allResults);
-    const [apiResultCount, setResCount] = React.useState(modalState.apiResultCount); // -1 means not from API
+    const [apiResultCount, setResCount] = React.useState(modalState.apiResultCount);
 
-    const options = ["Friends", "Server Members", "All Relationships", "Cached Messages", "All Messages", "Channels", "Servers"];
+    const options = ["Friends", "All Relationships", "Server Members", "Cached Messages", "All Messages", "Channels", "Servers"];
 
-    // unconventional save state functionality
     const saveState = () => {
         modalState = {
             query, option, allResults, apiResultCount, isOpen: true,
@@ -71,7 +69,6 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
         saveState();
     }, [allResults, apiResultCount, option, query]);
 
-    // Extra handler, it's for extra stuff tbh
     const handleSearch = async (query: string, option: number) => {
         const res = await handleBaseSearch(query, option);
 
@@ -89,7 +86,6 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
         return res;
     };
 
-    // ah fuck we handle multiple now
     const handleOptionSelect = (nextOption: number) => {
         setResults([]);
         setResCount(-1);
@@ -126,6 +122,7 @@ export default function ASModal({ modalProps }: { modalProps: RenderModalProps; 
                 {resultType === "messages" && <GenericResultCardGen results={allResults as Message[]} type="messages" />}
                 {resultType === "users" && <GenericResultCardGen results={allResults as User[]} type="users" />}
                 {resultType === "guilds" && <GenericResultCardGen results={allResults as Guild[]} type="guilds" />}
+                {resultType === "channels" && <GenericResultCardGen results={allResults as Channel[]} type="channels" />}
             </div>
         </Modal>
     );

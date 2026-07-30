@@ -6,24 +6,21 @@
 
 import { DataStore } from "@api/index";
 import { ghostData, settings } from "@plugins/betterSwitcher/index";
+import { Filter, GuildFolder } from "@plugins/betterSwitcher/utils/types";
 import { Guild } from "@vencord/discord-types";
 import { ChannelStore, GuildMemberStore, GuildRoleStore, PermissionsBits, PermissionStore } from "@webpack/common";
-
-import { Filter, GuildFolder } from "./types";
 
 const DAY_MS = 86_400_000;
 
 export async function filterHandlerGuild(filter: Filter, guild: Guild, folders?: GuildFolder[]): Promise<boolean> {
     const invert = filter.name.startsWith("not!");
     const filterName = (invert ? filter.name.slice(4) : filter.name).toLowerCase();
-    console.log(filterName);
     switch (filterName) {
         case "folder":
             if (filter.value === "noFolder")
                 return folders?.every(v => !v.guildIds.includes(guild.id)) !== invert;
             if (folders)
-                return folders?.find(v => v.folderName === filter.value)?.guildIds.includes(guild.id) !== invert; // null and undefined are falsy values so i guess.
-            console.log("no folders");
+                return folders?.find(v => v.folderName === filter.value)?.guildIds.includes(guild.id) !== invert;
             break;
         case "is":
             return await isHandlerGuild(filter.value, guild) !== invert;

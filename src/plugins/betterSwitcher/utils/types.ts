@@ -9,7 +9,9 @@ export type GuildFolder = {
     folderId: number,
     folderName: string,
     guildIds: string[];
-}; export type Filter = {
+};
+
+export type Filter = {
     name: string;
     value: string;
 };

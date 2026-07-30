@@ -26,18 +26,15 @@ function keydownHandler(e: KeyboardEvent) {
 
 // spooky dont let the ghosts get to you
 async function initializeGhosts() {
-    // remove all keys
     await DataStore.clear(ghostData);
 
     const allGuilds = GuildStore.getGuildIds();
-    const allChannels = ChannelStore.getSortedPrivateChannels();
-    allGuilds.forEach(async v => {
-        await DataStore.set(v, Date.now(), ghostData);
-    });
-    allChannels.forEach(async v => {
-        await DataStore.set(v.id, Date.now(), ghostData);
-    });
-    showToast("Initialized ghosts!", Toasts.Type.SUCCESS);
+    const allChannelIDs = ChannelStore.getSortedPrivateChannels()
+        .map(v => v.id);
+    const keys = [allGuilds, allChannelIDs].flat();
+    const values = keys.map<[string, number]>(v => [v, Date.now()]);
+    await DataStore.setMany(values, ghostData);
+    showToast("Guilds and channels now tracked for ghosting!", Toasts.Type.SUCCESS);
 }
 
 export const settings = definePluginSettings({
@@ -88,14 +85,14 @@ export const settings = definePluginSettings({
 export default definePlugin({
     name: "BetterSwitcher",
     description: "Adds a new switcher modal!",
-    authors: [Devs.oky],
+    authors: [Devs.josiah],
 
     settings,
     settingsAboutComponent: () => (
         <>
             <Heading tag="h3">This is BetterSwitcher!</Heading>
             <Paragraph>
-                BetterSwitcher is a better search bar, adding new filters to the base discord search. You can activate this modal with <span style={{
+                BetterSwitcher is a better search modal, adding new filters to the base discord search. You can activate this modal with <span style={{
                     fontWeight: "bold"
                 }}>Ctrl+Y</span>.
             </Paragraph>
@@ -108,19 +105,16 @@ export default definePlugin({
 
     flux: {
         MESSAGE_CREATE: async e => {
-            if (e.message.author.id !== UserStore.getCurrentUser().id) return; // MessageCreate fires every message recieved and sent
-            if (seen.has(e.message.id)) return; // Fires twice, once for guild, once for channel
+            if (e.message.author.id !== UserStore.getCurrentUser().id) return;
+            if (seen.has(e.message.id)) return;
             seen.add(e.message.id);
-            setTimeout(() => seen.delete(e.message.id), 500); // cleanup
-
+            setTimeout(() => seen.delete(e.message.id), 500);
             const key = e.guildId ?? e.channelId;
             await DataStore.set(key, Date.now(), ghostData);
         }
     },
 
     async start() {
-        // Initialize ghosting data
-        // is there a better way to just check for nothingness?
         const ghostEntries = await DataStore.entries(ghostData);
         if (ghostEntries.length === 0 && settings.store.trackGhosting) {
             initializeGhosts();

@@ -5,16 +5,17 @@
  */
 
 import { settings } from "@plugins/betterSwitcher/index";
-import { Guild, GuildMember, Message, User } from "@vencord/discord-types";
+import { Channel, Guild, GuildMember, Message, User } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
-import { Constants, GuildMemberStore, GuildStore, MessageStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
+import { ChannelStore, Constants, GuildMemberStore, GuildStore, MessageStore, RelationshipStore, SelectedChannelStore, SelectedGuildStore, UserStore } from "@webpack/common";
 
 import { searchDiscAPI } from "./apiSearch";
-import { guildFZF, messageFZF, userFZF } from "./fzf";
-import { filterHandlerGuild } from "./guildFilter";
-import { filterHandlerMessage } from "./messagefilter";
+import { filterHandlerChannel } from "./filters/channelFilter";
+import { filterHandlerGuild } from "./filters/guildFilter";
+import { filterHandlerMessage } from "./filters/messagefilter";
+import { filterHandlerUser } from "./filters/userFilter";
+import { channelFZF, guildFZF, messageFZF, userFZF } from "./fzf";
 import { Filter, GuildFolder } from "./types";
-import { filterHandlerUser } from "./userFilter";
 
 const { getGuildFolders } = findByPropsLazy("getGuildFolders");
 
@@ -91,24 +92,45 @@ async function guildSearch(input: string, filters?: Filter[], folders?: GuildFol
             g.name.toLowerCase().includes(word)
         )
     );
-    console.log(filters);
 
-    // for some reason, this works.
-    if (filters?.length) {
-        const out: Guild[] = [];
-        for (const guild of filtered) {
-            let ok = true;
-            for (const f of filters) {
-                if (!await filterHandlerGuild(f, guild, folders)) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (ok) out.push(guild);
-        }
-        filtered = out;
+    if (filters) {
+        const results = await Promise.all(
+            filtered.map(async v => {
+                const checks = await Promise.all(filters.map(f => filterHandlerGuild(f, v, folders)));
+                return checks.every(Boolean);
+            })
+        );
+        filtered = filtered.filter((_, i) => results[i]);
     }
     filtered = guildFZF(filtered, input);
+
+    return [filtered, filtered.length];
+}
+
+async function channelSearch(input: string, filters?: Filter[]): Promise<[Channel[], number]> {
+    const guildID = SelectedGuildStore.getGuildId();
+    if (!guildID) return [[], -1];
+    const channels = ChannelStore.getChannelIds(guildID)
+        .map(v => ChannelStore.getChannel(v));
+    const words = input.toLowerCase().split(/\s+/);
+
+    let filtered = channels.filter(g =>
+        words.some(word =>
+            g.name.toLowerCase().includes(word)
+        )
+    );
+    console.log(filters);
+
+    if (filters) {
+        const results = await Promise.all(
+            filtered.map(async v => {
+                const checks = await Promise.all(filters.map(f => filterHandlerChannel(f, v)));
+                return checks.every(Boolean);
+            })
+        );
+        filtered = filtered.filter((_, i) => results[i]);
+    }
+    filtered = channelFZF(filtered, input);
 
     return [filtered, filtered.length];
 }
@@ -117,6 +139,7 @@ export type SearchResult =
     { type: "message", data: Message[], count: number; } |
     { type: "user", data: User[], count: number; } |
     { type: "guild", data: Guild[], count: number; } |
+    { type: "channel", data: Channel[], count: number; } |
     { type: "undefined"; };
 
 export async function handleBaseSearch(input: string, option: number): Promise<SearchResult> {
@@ -132,9 +155,6 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
 
     const cleanedInput = input.replace(filterRegex, "").replace(/\s+/g, " ").trim();
 
-    console.log("Searching for: ", cleanedInput);
-    console.log("All filters: ", allFilters);
-
     switch (option) {
         case 0: {
             const relationshipIDs = RelationshipStore.getFriendIDs();
@@ -149,7 +169,7 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
         case 1: {
             const relationshipIDs = RelationshipStore.getMutableRelationships();
             const relationships = relationshipIDs
-                .keys().toArray() // each key is the user id of every relationship. yes we need to convert to array
+                .keys().toArray()
                 .map(id => UserStore.getUser(id))
                 .filter((user): user is User => user != null);
             const [data, count] = await userSearch(cleanedInput, relationships, filters);
@@ -159,20 +179,19 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
         }
         case 2: {
             const guildId = SelectedGuildStore.getGuildId();
-            if (!guildId) return {
-                type: "user", data: [], count: -1
-            };
+            if (!guildId) return { type: "user", data: [], count: -1 };
+
             const memberIds = GuildMemberStore.getMemberIds(guildId);
-            const members = memberIds.map(v => GuildMemberStore.getMember(guildId, v))
-                .filter((user): user is GuildMember => user != null);
-            const users = members.map(v => UserStore.getUser(v?.userId!));
-            if (!users) return {
-                type: "user", data: [], count: -1
-            };
+            const members = memberIds
+                .map(v => GuildMemberStore.getMember(guildId, v))
+                .filter((member): member is GuildMember => member != null && member.guildId === guildId);
+
+            const users = members
+                .map(member => UserStore.getUser(member.userId))
+                .filter((user): user is User => user != null);
+
             const [data, count] = await userSearch(cleanedInput, users, filters);
-            return {
-                type: "user", data, count
-            };
+            return { type: "user", data, count };
         }
         case 3: {
             const data = recentSearch(cleanedInput, filters);
@@ -184,6 +203,12 @@ export async function handleBaseSearch(input: string, option: number): Promise<S
             const [data, count] = await allSearch(cleanedInput, filters);
             return {
                 type: "message", data, count
+            };
+        }
+        case 5: {
+            const [data, count] = await channelSearch(cleanedInput, filters);
+            return {
+                type: "channel", data, count
             };
         }
         case 6: {

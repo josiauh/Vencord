@@ -19,13 +19,10 @@ function filtersToParams(filters: Filter[]): [params: URLParams, passthroughFilt
     const throwaway: Filter[] = [];
     const params: URLParams = {};
     filters.forEach(v => {
-        console.log("Checking", v);
         if (!supportedSet.has(v.name)) {
             throwaway.push(v);
-            console.log("Sending to the plugin handler");
             return;
         }
-        console.log("Sending to API");
         params[v.name] = v.value;
     });
 

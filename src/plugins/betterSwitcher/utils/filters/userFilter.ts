@@ -5,14 +5,11 @@
  */
 
 import { DataStore } from "@api/index";
+import { ghostData, settings } from "@plugins/betterSwitcher";
+import { Filter } from "@plugins/betterSwitcher/utils/types";
 import { User } from "@vencord/discord-types";
 import { RelationshipType } from "@vencord/discord-types/enums";
-import { RelationshipStore } from "@webpack/common";
-
-import { ghostData, settings } from "..";
-import { Filter } from "./types";
-
-// User functional
+import { ChannelStore, RelationshipStore } from "@webpack/common";
 
 const DAY_MS = 86_400_000;
 
@@ -27,9 +24,6 @@ export async function filterHandlerUser(filter: Filter, user: User): Promise<boo
 
     return !invert;
 }
-
-// god whyd i need a pending handler?
-
 async function isFilterHandlerUser(value: string, user: User) {
     switch (value) {
         case "pending": {
@@ -50,8 +44,8 @@ async function isFilterHandlerUser(value: string, user: User) {
         }
         case "ghosted": {
             if (!settings.store.trackGhosting) return false;
-
-            const lastActive = await DataStore.get<number>(user.id, ghostData);
+            const dmId = ChannelStore.getDMFromUserId(user.id) ?? "";
+            const lastActive = await DataStore.get<number>(dmId, ghostData);
             if (lastActive == null) return false;
 
             return Date.now() - lastActive >= settings.store.ghostTime * DAY_MS;

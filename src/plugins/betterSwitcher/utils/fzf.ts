@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Guild, Message, User } from "@vencord/discord-types";
+import { Channel, Guild, Message, User } from "@vencord/discord-types";
 
 const editDistance = (input: string, target: string) => {
     const m = input.length;
@@ -36,7 +36,6 @@ const editDistance = (input: string, target: string) => {
 
     return prev[n];
 };
-// For use with Guild and Message
 
 export function guildFZF(guilds: Guild[], input: string) {
     return guilds
@@ -46,6 +45,16 @@ export function guildFZF(guilds: Guild[], input: string) {
         }))
         .sort((a, b) => a.distance - b.distance)
         .map(({ g }) => g);
+}
+
+export function channelFZF(channels: Channel[], input: string) {
+    return channels
+        .map(c => ({
+            c,
+            distance: editDistance(input, c.name)
+        }))
+        .sort((a, b) => a.distance - b.distance)
+        .map(({ c }) => c);
 }
 
 export function userFZF(arr: User[], input: string) {

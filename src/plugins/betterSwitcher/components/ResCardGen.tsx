@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Guild, Message, User } from "@vencord/discord-types";
+import { Span } from "@components/Span";
+import { Channel, Guild, Message, User } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
-import { ChannelStore, GuildMemberStore, IconUtils, MessageActions, NavigationRouter, StreamerModeStore } from "@webpack/common";
+import { ChannelRouter, ChannelStore, GuildMemberStore, IconUtils, MessageActions, NavigationRouter, StreamerModeStore } from "@webpack/common";
 
 import { settings } from "..";
 import ResultCard from "./ResultCard";
@@ -32,7 +33,8 @@ const nameHelper = (user: User, guildId?: string): string => {
 type Props =
     | { type: "messages"; results: Message[]; }
     | { type: "users"; results: User[]; guildId?: string; }
-    | { type: "guilds"; results: Guild[]; };
+    | { type: "guilds"; results: Guild[]; }
+    | { type: "channels"; results: Channel[]; };
 
 
 export default function GenericResultCardGen({ ...props }: Props) {
@@ -40,6 +42,7 @@ export default function GenericResultCardGen({ ...props }: Props) {
         case "messages": return <MessageResultCardGenerator messages={props.results}></MessageResultCardGenerator>;
         case "users": return <UserResultCardGenerator users={props.results} guildId={props.guildId}></UserResultCardGenerator>;
         case "guilds": return <GuildResultCardGenerator guilds={props.results}></GuildResultCardGenerator>;
+        case "channels": return <ChannelResultCardGenerator channels={props.results}></ChannelResultCardGenerator>;
     }
 
     return null;
@@ -53,13 +56,28 @@ function MessageResultCardGenerator({ ...props }: {
             key={v.id}
             mainContent={nameHelper(v.author)} // hell yeah inline code
             dimText={v.content.slice(0, settings.store.messagePreviewLength)}
-            sideText={ChannelStore.getChannel(v.channel_id).name ?? ""}
+            sideText={ChannelStore.getChannel(v.channel_id).name ?? "UKNKNOWN"}
             onClick={() => {
                 MessageActions.jumpToMessage({
                     channelId: v.channel_id,
                     messageId: v.id,
                     flash: true
                 });
+            }}
+        />
+    ));
+}
+
+function ChannelResultCardGenerator({ ...props }: {
+    channels: Channel[];
+}) {
+    return props.channels.map(v => (
+        <ResultCard
+            key={v.id}
+            extraLeftNodes={<Span>#</Span>}
+            mainContent={v.name}
+            onClick={() => {
+                ChannelRouter.transitionToChannel(v.id);
             }}
         />
     ));
@@ -74,7 +92,7 @@ function UserResultCardGenerator({ ...props }: {
         .map(v => (
             <ResultCard
                 key={v.id}
-                mainContent={nameHelper(v, props.guildId)} // hell yeah inline code
+                mainContent={nameHelper(v, props.guildId)}
                 extraLeftNodes={(
                     <img src={v.getAvatarURL(props.guildId, 32, true)} alt={"Avatar"} height={32} width={32} style={{ borderRadius: 100 }} />
                 )}

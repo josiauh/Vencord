@@ -1,10 +1,6 @@
 # BetterSwitcher
 
-An extension of Discord's search bar and quick finder!
-
-## How do I use it?
-
-It's a search modal, to activate it use `Ctrl+Y`.
+An extension of Discord's search bar and quick finder! Open it with `Ctrl+Y`.
 
 ## Filters
 
@@ -15,46 +11,43 @@ Filter values can use double quotes to include spaces.
 * [x] `is:<query>`: Extra things to search for, each category will have their own "is" queries
 * [ ] `is:favorite`: An object you have favorited. You can favorite something in a context menu.
 
-### Messages (COMPLETED IMPLEMENTATION!)
+### Messages
 
 Note: if you are using All Messages, that hits the Discord API, which is limited to 25 messages per result. Use the `offset` filter (from the docs):
 
-* `offset:<number>`: Number to offset the returned messages by (max 9975)
+* `offset:<number>` (max 9975)
 
-* [x] `is:reply`: Author is replying to a message (this includes forwarding, at least for now)
-* [x] `reaction:<emojiName/emojiId>`: Messages with a certain reaction
+* [x] `is:reply`
+* [x] `reaction:<emojiName/emojiId>`
 * [x] `is:spawnThread`: Messages that make a thread
-* [x] `is:edited`: Has an edit
+* [x] `is:edited`
 
-### Users (COMPLETED IMPLEMENTATION!)
+### Users
 
-* [x] `is:pending`: You have a friend request to, or they're friend requesting you
-* [x] `is:friend`: This is your friend!
+* [x] `is:pending`: Friend request sent?
+* [x] `is:friend`
 * [x] `is:suggested`: Suggested friends (see the [article on suggested friends](https://support.discord.com/hc/en-us/articles/360061878534-Find-Your-Friends-FAQ))
-* [x] `is:implicit`: You interact with them a lot, like they are your friend (see the ImplicitRelationships plugin)
-* [x] `is:ghosted`: Haven't talked to this friend for at least 1 week/configured time. You must configure the ghosting option first.
-<!-- has:note has been removed for needing to hit the API for every friend. bad -->
+* [x] `is:implicit` (see the ImplicitRelationships plugin for detail)
+* [x] `is:ghosted`: Haven't messaged for at least 1 week/configured time. (must be tracked in settings)
 
 ### Channels
 
-* [ ] `is:readOnly`: Can't talk in these channels
-* [ ] `is:hidden`: Show channels you have no access to at all
+* [x] `is:readOnly`: Can't talk in these channels
+* [ ] `is:hidden`: Channels you don't normally see
 * [ ] `is:<type>`: The channel is type, type being forum, voice, text, stage, or thread
 
-### Servers (COMPLETED IMPLEMENTATION!)
+### Servers
 
 * [x] `folder:<name>`: What folder the server is in
 * [x] `folder:noFolder`: All the unsorted servers
-* [x] `is:readOnly`: No channels are available for you to speak in for that server
-* [x] `is:ghosted`: See the Users/Friends entry
-* [x] `is:boosted`: Have you boosted the server?
-* [x] `is:mod`: Are you able to do basic moderation in this server all around? (Delete messages, kick members, pin messages, bypass slowmodes)
-* [x] `is:admin`: Do you have administrator permission server-wide?
-
-<!-- is:🤼‍♀️: Jamie Paige -->
+* [x] `is:readOnly`
+* [x] `is:ghosted`
+* [x] `is:boosted`
+* [x] `is:mod`: Are you able to do basic moderation in this server?
+* [x] `is:admin`
 
 ## Limitations
 
-* Cached Messages, obviously, is cached and cannot go older. However, this comes with faster speed and more results. Choose wisely
-* Guild Members have the same limitation of being cached, meaning not every member can be searched for.
-* The reimplementation of `mentions` ONLY supports snowflakes or cached guild members. No I will not bother implementing this until finalization
+* Cached Messages is cached and cannot go older. Its faster though
+* Guild Members have the same limitation of being cached with no way to search all.
+* The reimplementation of `mentions` ONLY supports snowflakes or cached guild members.
